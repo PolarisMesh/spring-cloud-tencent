@@ -28,7 +28,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Test for {@link PolarisLoggingApplicationListener}
+ * Test for {@link PolarisLoggingApplicationListener}.
  *
  * @author wenxuan70
  */

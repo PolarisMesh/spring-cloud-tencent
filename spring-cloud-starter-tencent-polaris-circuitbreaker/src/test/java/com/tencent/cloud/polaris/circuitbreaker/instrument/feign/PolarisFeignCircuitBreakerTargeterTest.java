@@ -50,13 +50,13 @@ public class PolarisFeignCircuitBreakerTargeterTest {
 
 	@Test
 	public void testTarget() {
-		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter(circuitBreakerFactory, circuitBreakerNameResolver);
+		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter();
 		targeter.target(new FeignClientFactoryBean(), new Feign.Builder(), new FeignContext(), new Target.HardCodedTarget<>(TestApi.class, "/test"));
 	}
 
 	@Test
 	public void testTarget2() {
-		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter(circuitBreakerFactory, circuitBreakerNameResolver);
+		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter();
 		FeignClientFactoryBean feignClientFactoryBean = mock(FeignClientFactoryBean.class);
 		doReturn(TestApi.class).when(feignClientFactoryBean).getFallback();
 		doReturn("test").when(feignClientFactoryBean).getName();
@@ -69,7 +69,7 @@ public class PolarisFeignCircuitBreakerTargeterTest {
 
 	@Test
 	public void testTarget3() {
-		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter(circuitBreakerFactory, circuitBreakerNameResolver);
+		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter();
 		FeignClientFactoryBean feignClientFactoryBean = mock(FeignClientFactoryBean.class);
 		doReturn(void.class).when(feignClientFactoryBean).getFallback();
 		doReturn(TestApi.class).when(feignClientFactoryBean).getFallbackFactory();

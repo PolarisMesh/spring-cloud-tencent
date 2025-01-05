@@ -17,6 +17,8 @@
 
 package com.tencent.cloud.polaris.config.adapter;
 
+import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,6 +30,7 @@ import com.tencent.cloud.polaris.config.config.PolarisConfigProperties;
 import com.tencent.cloud.polaris.context.config.PolarisContextProperties;
 import com.tencent.polaris.configuration.api.core.ConfigFileService;
 import com.tencent.polaris.configuration.api.core.ConfigKVFile;
+import com.tencent.polaris.configuration.client.internal.RevisableConfigFileGroup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,6 +68,7 @@ public class PolarisConfigFileLocatorTest {
 
 	@Test
 	public void testLoadApplicationPropertiesFile() {
+		clearCompositePropertySourceCache();
 		PolarisConfigFileLocator locator = new PolarisConfigFileLocator(polarisConfigProperties, polarisContextProperties,
 				configFileService, environment);
 
@@ -102,6 +106,7 @@ public class PolarisConfigFileLocatorTest {
 
 	@Test
 	public void testActiveProfileFilesPriorityBiggerThanDefault() {
+		clearCompositePropertySourceCache();
 		PolarisConfigFileLocator locator = new PolarisConfigFileLocator(polarisConfigProperties, polarisContextProperties,
 				configFileService, environment);
 
@@ -151,6 +156,7 @@ public class PolarisConfigFileLocatorTest {
 
 	@Test
 	public void testGetCustomFiles() {
+		clearCompositePropertySourceCache();
 		PolarisConfigFileLocator locator = new PolarisConfigFileLocator(polarisConfigProperties, polarisContextProperties,
 				configFileService, environment);
 
@@ -200,5 +206,74 @@ public class PolarisConfigFileLocatorTest {
 		assertThat(propertySource.getProperty("k1")).isEqualTo("v1");
 		assertThat(propertySource.getProperty("k2")).isEqualTo("v2");
 		assertThat(propertySource.getProperty("k3")).isEqualTo("v3");
+	}
+
+
+	@Test
+	public void testGetCustomGroupFiles() {
+		clearCompositePropertySourceCache();
+		PolarisConfigFileLocator locator = new PolarisConfigFileLocator(polarisConfigProperties, polarisContextProperties,
+				configFileService, environment);
+
+		when(polarisContextProperties.getNamespace()).thenReturn(testNamespace);
+		when(polarisContextProperties.getService()).thenReturn(testServiceName);
+
+		Map<String, Object> emptyMap = new HashMap<>();
+		ConfigKVFile emptyConfigFile = new MockedConfigKVFile(emptyMap);
+
+		when(configFileService.getConfigPropertiesFile(testNamespace, testServiceName, "application.properties")).thenReturn(emptyConfigFile);
+		when(configFileService.getConfigYamlFile(testNamespace, testServiceName, "application.yml")).thenReturn(emptyConfigFile);
+		when(configFileService.getConfigYamlFile(testNamespace, testServiceName, "application.yaml")).thenReturn(emptyConfigFile);
+		when(configFileService.getConfigPropertiesFile(testNamespace, testServiceName, "bootstrap.properties")).thenReturn(emptyConfigFile);
+		when(configFileService.getConfigYamlFile(testNamespace, testServiceName, "bootstrap.yml")).thenReturn(emptyConfigFile);
+		when(configFileService.getConfigYamlFile(testNamespace, testServiceName, "bootstrap.yaml")).thenReturn(emptyConfigFile);
+
+		List<ConfigFileGroup> customFiles = new LinkedList<>();
+		ConfigFileGroup configFileGroup = new ConfigFileGroup();
+		String customGroup = "group2";
+		configFileGroup.setName(customGroup);
+		String customFile1 = "file1.properties";
+		String customFile2 = "file2.yaml";
+		customFiles.add(configFileGroup);
+
+		when(polarisConfigProperties.isEnabled()).thenReturn(true);
+		when(polarisConfigProperties.getGroups()).thenReturn(customFiles);
+		when(polarisConfigProperties.isInternalEnabled()).thenReturn(true);
+		when(environment.getActiveProfiles()).thenReturn(new String[] {});
+
+		// file1.properties
+		Map<String, Object> file1Map = new HashMap<>();
+		file1Map.put("k1", "v1");
+		file1Map.put("k2", "v2");
+		ConfigKVFile file1 = new MockedConfigKVFile(file1Map, customFile1);
+		when(configFileService.getConfigPropertiesFile(testNamespace, customGroup, customFile1)).thenReturn(file1);
+
+		// file2.yaml
+		Map<String, Object> file2Map = new HashMap<>();
+		file2Map.put("k1", "v11");
+		file2Map.put("k3", "v3");
+		ConfigKVFile file2 = new MockedConfigKVFile(file2Map, customFile2);
+		when(configFileService.getConfigYamlFile(testNamespace, customGroup, customFile2)).thenReturn(file2);
+
+		RevisableConfigFileGroup revisableConfigFileGroup = new RevisableConfigFileGroup(testNamespace, customGroup, Arrays.asList(file1, file2), "v1");
+		when(configFileService.getConfigFileGroup(testNamespace, customGroup)).thenReturn(revisableConfigFileGroup);
+
+		PropertySource<?> propertySource = locator.locate(environment);
+
+		assertThat(propertySource.getProperty("k1")).isEqualTo("v1");
+		assertThat(propertySource.getProperty("k2")).isEqualTo("v2");
+		assertThat(propertySource.getProperty("k3")).isEqualTo("v3");
+	}
+
+	private void clearCompositePropertySourceCache() {
+		try {
+			Class<?> clazz = PolarisConfigFileLocator.class;
+			Field field = clazz.getDeclaredField("compositePropertySourceCache");
+			field.setAccessible(true);
+			field.set(null, null);
+		}
+		catch (Exception e) {
+			// ignore
+		}
 	}
 }
