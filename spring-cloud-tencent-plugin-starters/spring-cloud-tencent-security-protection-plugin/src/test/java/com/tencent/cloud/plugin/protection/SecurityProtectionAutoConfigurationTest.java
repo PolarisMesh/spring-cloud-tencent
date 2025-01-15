@@ -33,6 +33,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+/**
+ * Test for {@link SecurityProtectionAutoConfiguration}.
+ */
 @ExtendWith(MockitoExtension.class)
 class SecurityProtectionAutoConfigurationTest {
 

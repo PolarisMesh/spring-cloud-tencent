@@ -18,11 +18,15 @@
 package com.tencent.cloud.rpc.enhancement.instrument.resttemplate;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 
+import com.tencent.cloud.common.constant.ContextConstant;
+import com.tencent.cloud.common.metadata.MetadataContextHolder;
 import com.tencent.cloud.rpc.enhancement.plugin.EnhancedPluginContext;
 import com.tencent.cloud.rpc.enhancement.plugin.EnhancedPluginRunner;
 import com.tencent.cloud.rpc.enhancement.plugin.EnhancedPluginType;
+import com.tencent.polaris.metadata.core.MetadataType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,15 +43,23 @@ import org.springframework.cloud.client.loadbalancer.ServiceRequestWrapper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test for {@link EnhancedRestTemplateWrapInterceptor}.
+ *
+ * @author Shedfree Wu
+ */
 @ExtendWith(MockitoExtension.class)
 class EnhancedRestTemplateWrapInterceptorTest {
 
@@ -143,6 +155,42 @@ class EnhancedRestTemplateWrapInterceptorTest {
 	}
 
 	@Test
+	void testInterceptWithFallback() throws IOException {
+		// Arrange
+		URI originalUri = URI.create("http://original-service/api");
+		URI wrappedUri = URI.create("http://wrapped-service/api");
+		HttpHeaders headers = new HttpHeaders();
+
+		when(serviceRequestWrapper.getURI()).thenReturn(wrappedUri);
+		when(serviceRequestWrapper.getRequest()).thenReturn(request);
+		when(serviceRequestWrapper.getHeaders()).thenReturn(headers);
+		when(serviceRequestWrapper.getMethod()).thenReturn(HttpMethod.POST);
+		when(request.getURI()).thenReturn(originalUri);
+		when(pluginRunner.getLocalServiceInstance()).thenReturn(localServiceInstance);
+		when(delegate.execute(any(), any())).thenReturn(response);
+		when(response.getRawStatusCode()).thenReturn(200);
+		when(response.getHeaders()).thenReturn(new HttpHeaders());
+
+		Object fallbackResponse = new MockClientHttpResponse();
+		MetadataContextHolder.get().getMetadataContainer(MetadataType.APPLICATION, true).
+				putMetadataObjectValue(ContextConstant.CircuitBreaker.CIRCUIT_BREAKER_FALLBACK_HTTP_RESPONSE, fallbackResponse);
+
+		// Act
+		interceptor.intercept(serviceRequestWrapper, "test-service", mock(LoadBalancerRequest.class));
+
+		// Assert
+		verify(pluginRunner).run(eq(EnhancedPluginType.Client.PRE), any(EnhancedPluginContext.class));
+
+		ArgumentCaptor<EnhancedPluginContext> contextCaptor = ArgumentCaptor.forClass(EnhancedPluginContext.class);
+		verify(pluginRunner).run(eq(EnhancedPluginType.Client.PRE), contextCaptor.capture());
+
+		EnhancedPluginContext capturedContext = contextCaptor.getValue();
+		Assertions.assertEquals(wrappedUri, capturedContext.getRequest().getUrl());
+		Assertions.assertEquals(originalUri, capturedContext.getRequest().getServiceUrl());
+		Assertions.assertEquals(serviceRequestWrapper, capturedContext.getOriginRequest());
+	}
+
+	@Test
 	void testInterceptWithNullLocalServiceInstance() throws IOException {
 		// Arrange
 		URI uri = URI.create("http://test-service/api");
@@ -165,5 +213,62 @@ class EnhancedRestTemplateWrapInterceptorTest {
 
 		EnhancedPluginContext capturedContext = contextCaptor.getValue();
 		assertThat(capturedContext.getLocalServiceInstance()).isNull();
+	}
+
+	@Test
+	void testExceptionHandling() throws IOException {
+		// Arrange
+		LoadBalancerRequest<ClientHttpResponse> loadBalancerRequest = mock(LoadBalancerRequest.class);
+		IOException expectedException = new IOException("Test exception");
+		when(delegate.execute(anyString(), any(LoadBalancerRequest.class)))
+				.thenThrow(expectedException);
+
+		// Act & Assert
+		Exception actualException = Assertions.assertThrows(IOException.class, () -> {
+			interceptor.intercept(request, "test-service", loadBalancerRequest);
+		});
+
+		// Verify exception handling
+		verify(pluginRunner, times(1))
+				.run(eq(EnhancedPluginType.Client.EXCEPTION), any(EnhancedPluginContext.class));
+
+		// Verify finally block is executed
+		verify(pluginRunner, times(1))
+				.run(eq(EnhancedPluginType.Client.FINALLY), any(EnhancedPluginContext.class));
+
+		// Verify the thrown exception is the same
+		Assertions.assertEquals(expectedException, actualException);
+	}
+
+	static class MockClientHttpResponse implements ClientHttpResponse {
+		@Override
+		public HttpStatus getStatusCode() throws IOException {
+			return null;
+		}
+
+		@Override
+		public int getRawStatusCode() throws IOException {
+			return 0;
+		}
+
+		@Override
+		public String getStatusText() throws IOException {
+			return null;
+		}
+
+		@Override
+		public void close() {
+
+		}
+
+		@Override
+		public InputStream getBody() throws IOException {
+			return null;
+		}
+
+		@Override
+		public HttpHeaders getHeaders() {
+			return null;
+		}
 	}
 }

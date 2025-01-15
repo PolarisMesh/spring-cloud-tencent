@@ -34,6 +34,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test for ${@link LoadBalancerInterceptorBeanPostProcessor}.
+ *
+ * @author Shedfree Wu
+ */
 class LoadBalancerInterceptorBeanPostProcessorTest {
 
 	@Mock

@@ -20,6 +20,11 @@ package com.tencent.cloud.plugin.protection;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 
+/**
+ * ExitUtils.
+ *
+ * @author Shedfree Wu
+ */
 public final class ExitUtils {
 
 	private ExitUtils() {

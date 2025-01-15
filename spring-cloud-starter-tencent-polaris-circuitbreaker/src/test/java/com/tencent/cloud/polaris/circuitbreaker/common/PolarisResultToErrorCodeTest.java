@@ -26,6 +26,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+/**
+ * Test for ${@link PolarisResultToErrorCode}.
+ *
+ * @author Shedfree Wu
+ */
 @ExtendWith(MockitoExtension.class)
 class PolarisResultToErrorCodeTest {
 

@@ -17,10 +17,14 @@
 
 package com.tencent.cloud.polaris.circuitbreaker.instrument.feign;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.tencent.cloud.polaris.circuitbreaker.exception.FallbackWrapperException;
+import com.tencent.polaris.api.pojo.CircuitBreakerStatus;
+import com.tencent.polaris.circuitbreak.client.exception.CallAbortedException;
 import feign.InvocationHandlerFactory;
 import feign.Target;
 import feign.codec.Decoder;
@@ -33,9 +37,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.cloud.openfeign.FallbackFactory;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test for ${@link PolarisFeignCircuitBreakerInvocationHandler}.
+ *
+ * @author Shedfree Wu
+ */
 @ExtendWith(MockitoExtension.class)
 class PolarisFeignCircuitBreakerInvocationHandlerTest {
 
@@ -46,7 +57,7 @@ class PolarisFeignCircuitBreakerInvocationHandlerTest {
 	private InvocationHandlerFactory.MethodHandler methodHandler;
 
 	@Mock
-	private FallbackFactory<?> fallbackFactory;
+	private FallbackFactory<TestInterface> fallbackFactory;
 
 	@Mock
 	private Decoder decoder;
@@ -54,12 +65,14 @@ class PolarisFeignCircuitBreakerInvocationHandlerTest {
 	private Map<Method, InvocationHandlerFactory.MethodHandler> dispatch;
 	private PolarisFeignCircuitBreakerInvocationHandler handler;
 
+	private Method testMethod;
+
 	@BeforeEach
 	void setUp() throws Exception {
 		dispatch = new HashMap<>();
 
-		Method method = TestInterface.class.getMethod("testMethod");
-		dispatch.put(method, methodHandler);
+		testMethod = TestInterface.class.getDeclaredMethod("testMethod");
+		dispatch.put(testMethod, methodHandler);
 
 		handler = new PolarisFeignCircuitBreakerInvocationHandler(
 				target,
@@ -121,7 +134,83 @@ class PolarisFeignCircuitBreakerInvocationHandlerTest {
 		Assertions.assertEquals("TestTarget", handler.invoke(mockProxy, toStringMethod, null));
 	}
 
+	@Test
+	void testCustomFallbackFactoryWithFallbackError() throws Throwable {
+		// Arrange
+		handler = new PolarisFeignCircuitBreakerInvocationHandler(target, dispatch, fallbackFactory, decoder);
+		Exception originalException = new RuntimeException("Original error");
+
+		when(methodHandler.invoke(any())).thenThrow(originalException);
+		TestImpl testImpl = new TestImpl();
+		when(fallbackFactory.create(any())).thenReturn(testImpl);
+
+		// Act
+		assertThatThrownBy(() -> handler.invoke(null, testMethod, new Object[] {})).isInstanceOf(FallbackWrapperException.class);
+	}
+
+	@Test
+	void testCustomFallbackFactoryWithFallbackError2() throws Throwable {
+		// Arrange
+		handler = new PolarisFeignCircuitBreakerInvocationHandler(target, dispatch, fallbackFactory, decoder);
+		Exception originalException = new RuntimeException("Original error");
+
+		when(methodHandler.invoke(any())).thenThrow(originalException);
+		TestImpl2 testImpl = new TestImpl2();
+		when(fallbackFactory.create(any())).thenReturn(testImpl);
+
+		// Act
+		assertThatThrownBy(() -> handler.invoke(null, testMethod, new Object[] {})).
+				isInstanceOf(RuntimeException.class).hasMessage("test");
+	}
+
+	@Test
+	void testDefaultFallbackCreation() throws Throwable {
+		// Arrange
+		handler = new PolarisFeignCircuitBreakerInvocationHandler(target, dispatch, null, decoder);
+		CircuitBreakerStatus.FallbackInfo fallbackInfo = new CircuitBreakerStatus.FallbackInfo(200, new HashMap<>(), "mock body");
+		CallAbortedException originalException = new CallAbortedException("test rule", fallbackInfo);
+
+		Object expected = new Object();
+		when(methodHandler.invoke(any())).thenThrow(originalException);
+		when(decoder.decode(any(), any())).thenReturn(expected);
+
+		// Act
+		Object result = handler.invoke(null, testMethod, new Object[] {});
+
+		// Verify
+		Assertions.assertEquals(expected, result);
+	}
+
+	@Test
+	void testEquals() {
+		PolarisFeignCircuitBreakerInvocationHandler testHandler = new PolarisFeignCircuitBreakerInvocationHandler(
+				target,
+				dispatch,
+				fallbackFactory,
+				decoder
+		);
+
+		Assertions.assertEquals(handler, testHandler);
+		Assertions.assertEquals(handler.hashCode(), testHandler.hashCode());
+	}
+
 	interface TestInterface {
-		String testMethod();
+		String testMethod() throws InvocationTargetException;
+	}
+
+	static class TestImpl implements TestInterface {
+
+		@Override
+		public String testMethod() throws InvocationTargetException {
+			throw new InvocationTargetException(new RuntimeException("test"));
+		}
+	}
+
+	static class TestImpl2 implements TestInterface {
+
+		@Override
+		public String testMethod() throws InvocationTargetException {
+			throw new RuntimeException("test");
+		}
 	}
 }

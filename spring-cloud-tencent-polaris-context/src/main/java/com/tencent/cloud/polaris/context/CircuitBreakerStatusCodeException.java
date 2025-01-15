@@ -20,6 +20,11 @@ package com.tencent.cloud.polaris.context;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpStatusCodeException;
 
+/**
+ * CircuitBreaker HttpStatusCodeException.
+ *
+ * @author Shedfree Wu
+ */
 public class CircuitBreakerStatusCodeException extends HttpStatusCodeException {
 
 	public CircuitBreakerStatusCodeException(HttpStatus statusCode) {

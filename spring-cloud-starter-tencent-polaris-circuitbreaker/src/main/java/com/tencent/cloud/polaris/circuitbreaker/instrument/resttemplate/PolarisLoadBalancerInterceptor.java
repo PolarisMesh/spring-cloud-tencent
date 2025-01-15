@@ -31,6 +31,11 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.Assert;
 
+/**
+ * PolarisLoadBalancerInterceptor is a wrapper of LoadBalancerInterceptor.
+ *
+ * @author Shedfree Wu
+ */
 public class PolarisLoadBalancerInterceptor extends LoadBalancerInterceptor {
 
 	private final LoadBalancerClient loadBalancer;

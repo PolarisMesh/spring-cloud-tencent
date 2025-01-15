@@ -31,6 +31,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.function.RouterFunction;
 
+/**
+ * SecurityProtectionAutoConfiguration.
+ *
+ * @author Shedfree Wu
+ */
 @Configuration
 public class SecurityProtectionAutoConfiguration {
 

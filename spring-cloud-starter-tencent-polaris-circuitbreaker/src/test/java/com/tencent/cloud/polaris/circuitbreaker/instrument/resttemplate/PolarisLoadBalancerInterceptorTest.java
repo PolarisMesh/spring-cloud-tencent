@@ -15,14 +15,12 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.tencent.cloud.polaris.circuitbreaker.resttemplate;
+package com.tencent.cloud.polaris.circuitbreaker.instrument.resttemplate;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
 
-import com.tencent.cloud.polaris.circuitbreaker.instrument.resttemplate.PolarisCircuitBreakerHttpResponse;
-import com.tencent.cloud.polaris.circuitbreaker.instrument.resttemplate.PolarisLoadBalancerInterceptor;
 import com.tencent.cloud.rpc.enhancement.plugin.EnhancedPluginRunner;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +39,11 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test for ${@link PolarisLoadBalancerInterceptor}.
+ *
+ * @author Shedfree Wu
+ */
 @ExtendWith(MockitoExtension.class)
 class PolarisLoadBalancerInterceptorTest {
 

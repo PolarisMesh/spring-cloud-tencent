@@ -208,7 +208,7 @@ public class PolarisConfigFileLocator implements PropertySourceLocator {
 		internalConfigFiles.add(new DefaultConfigFileMetadata(namespace, serviceName, "bootstrap.yaml"));
 	}
 
-	private void initTsfConfigGroups(CompositePropertySource compositePropertySource) {
+	void initTsfConfigGroups(CompositePropertySource compositePropertySource) {
 		String tsfId = environment.getProperty("tsf_id");
 		String tsfNamespaceName = environment.getProperty("tsf_namespace_name");
 		String tsfGroupName = environment.getProperty("tsf_group_name");

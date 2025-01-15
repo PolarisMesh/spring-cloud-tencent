@@ -30,6 +30,11 @@ import org.springframework.cloud.client.loadbalancer.LoadBalancerRequestFactory;
 import org.springframework.core.Ordered;
 import org.springframework.lang.NonNull;
 
+/**
+ * LoadBalancerInterceptorBeanPostProcessor is used to wrap the default LoadBalancerInterceptor implementation and returns a custom PolarisLoadBalancerInterceptor.
+ *
+ * @author Shedfree Wu
+ */
 public class LoadBalancerInterceptorBeanPostProcessor implements BeanPostProcessor, BeanFactoryAware, Ordered {
 	/**
 	 * The order of the bean post processor. if user want to wrap it(CustomLoadBalancerInterceptor -> PolarisLoadBalancerInterceptor), CustomLoadBalancerInterceptorBeanPostProcessor's order should be bigger than ${@link POLARIS_LOAD_BALANCER_INTERCEPTOR_POST_PROCESSOR_ORDER}.
