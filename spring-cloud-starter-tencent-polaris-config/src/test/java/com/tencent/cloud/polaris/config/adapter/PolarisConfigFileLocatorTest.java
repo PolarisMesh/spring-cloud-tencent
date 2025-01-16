@@ -27,10 +27,12 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 import com.tencent.cloud.polaris.config.config.ConfigFileGroup;
 import com.tencent.cloud.polaris.config.config.PolarisConfigProperties;
+import com.tencent.cloud.polaris.config.enums.RefreshType;
 import com.tencent.cloud.polaris.context.config.PolarisContextProperties;
 import com.tencent.polaris.configuration.api.core.ConfigFileService;
 import com.tencent.polaris.configuration.api.core.ConfigKVFile;
 import com.tencent.polaris.configuration.client.internal.RevisableConfigFileGroup;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -315,6 +317,54 @@ public class PolarisConfigFileLocatorTest {
 			assertThat(polarisPropertySources.stream().map(PolarisPropertySource::getPropertySourceName).
 					filter(name -> name.equals(expectedAppConfigGroup)).count() == 1);
 		}
+	}
+
+	@Test
+	void testPolarisConfigProperties() {
+		PolarisConfigProperties testProperties = new PolarisConfigProperties();
+		boolean enabled = true;
+		String address = "127.0.0.1";
+		int port = 1234;
+		String token = "<PASSWORD>";
+		boolean autoRefresh = true;
+		RefreshType refreshType = RefreshType.REFRESH_CONTEXT;
+		List<ConfigFileGroup> groups = new LinkedList<>();
+		boolean preference = true;
+		String dataSource = "test-data-source";
+		String localFileRootPath = "test-local-file-root-path";
+		boolean internalEnabled = true;
+		boolean checkAddress = true;
+		boolean shutdownIfConnectToConfigServerFailed = true;
+
+		testProperties.setEnabled(enabled);
+		testProperties.setAddress(address);
+		testProperties.setPort(port);
+		testProperties.setToken(token);
+		testProperties.setAutoRefresh(autoRefresh);
+		testProperties.setRefreshType(refreshType);
+		testProperties.setGroups(groups);
+		testProperties.setPreference(preference);
+		testProperties.setDataSource(dataSource);
+		testProperties.setLocalFileRootPath(localFileRootPath);
+		testProperties.setInternalEnabled(internalEnabled);
+		testProperties.setCheckAddress(checkAddress);
+		testProperties.setShutdownIfConnectToConfigServerFailed(shutdownIfConnectToConfigServerFailed);
+
+		Assertions.assertEquals(enabled, testProperties.isEnabled());
+		Assertions.assertEquals(address, testProperties.getAddress());
+		Assertions.assertEquals(port, testProperties.getPort());
+		Assertions.assertEquals(token, testProperties.getToken());
+		Assertions.assertEquals(autoRefresh, testProperties.isAutoRefresh());
+		Assertions.assertEquals(refreshType, testProperties.getRefreshType());
+		Assertions.assertEquals(groups, testProperties.getGroups());
+		Assertions.assertEquals(preference, testProperties.isPreference());
+		Assertions.assertEquals(dataSource, testProperties.getDataSource());
+		Assertions.assertEquals(localFileRootPath, testProperties.getLocalFileRootPath());
+		Assertions.assertEquals(internalEnabled, testProperties.isInternalEnabled());
+		Assertions.assertEquals(checkAddress, testProperties.isCheckAddress());
+		Assertions.assertEquals(shutdownIfConnectToConfigServerFailed, testProperties.isShutdownIfConnectToConfigServerFailed());
+
+		Assertions.assertNotNull(testProperties.toString());
 	}
 
 	private void clearCompositePropertySourceCache() {
