@@ -27,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.cloud.openfeign.CircuitBreakerNameResolver;
+import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.cloud.openfeign.FeignClientFactoryBean;
 import org.springframework.cloud.openfeign.FeignContext;
 
@@ -48,15 +49,21 @@ public class PolarisFeignCircuitBreakerTargeterTest {
 	@Mock
 	CircuitBreakerNameResolver circuitBreakerNameResolver;
 
+	@Mock
+	FeignContext feignContext;
+
+	@Mock
+	private FeignClientFactoryBean factory;
+
 	@Test
 	public void testTarget() {
-		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter(circuitBreakerFactory, circuitBreakerNameResolver);
+		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter();
 		targeter.target(new FeignClientFactoryBean(), new Feign.Builder(), new FeignContext(), new Target.HardCodedTarget<>(TestApi.class, "/test"));
 	}
 
 	@Test
 	public void testTarget2() {
-		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter(circuitBreakerFactory, circuitBreakerNameResolver);
+		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter();
 		FeignClientFactoryBean feignClientFactoryBean = mock(FeignClientFactoryBean.class);
 		doReturn(TestApi.class).when(feignClientFactoryBean).getFallback();
 		doReturn("test").when(feignClientFactoryBean).getName();
@@ -69,7 +76,7 @@ public class PolarisFeignCircuitBreakerTargeterTest {
 
 	@Test
 	public void testTarget3() {
-		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter(circuitBreakerFactory, circuitBreakerNameResolver);
+		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter();
 		FeignClientFactoryBean feignClientFactoryBean = mock(FeignClientFactoryBean.class);
 		doReturn(void.class).when(feignClientFactoryBean).getFallback();
 		doReturn(TestApi.class).when(feignClientFactoryBean).getFallbackFactory();
@@ -81,9 +88,63 @@ public class PolarisFeignCircuitBreakerTargeterTest {
 		}).isInstanceOf(IllegalStateException.class);
 	}
 
+	@Test
+	public void testTarget4() {
+		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter();
+		FeignClientFactoryBean feignClientFactoryBean = mock(FeignClientFactoryBean.class);
+		// no fallback and no fallback factory
+		doReturn(void.class).when(feignClientFactoryBean).getFallback();
+		doReturn(void.class).when(feignClientFactoryBean).getFallbackFactory();
+		doReturn("test").when(feignClientFactoryBean).getName();
+
+		targeter.target(feignClientFactoryBean, new PolarisFeignCircuitBreaker.Builder(), feignContext, new Target.HardCodedTarget<>(TestApi.class, "/test"));
+	}
+
+	@Test
+	public void testTargetWithFallbackFactory() {
+		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter();
+		FeignClientFactoryBean feignClientFactoryBean = mock(FeignClientFactoryBean.class);
+
+		doReturn(void.class).when(feignClientFactoryBean).getFallback();
+		doReturn(PolarisCircuitBreakerFallbackFactory.class).when(feignClientFactoryBean).getFallbackFactory();
+		doReturn("test").when(feignClientFactoryBean).getName();
+
+		doReturn(new PolarisCircuitBreakerFallbackFactory()).when(feignContext).getInstance("test", PolarisCircuitBreakerFallbackFactory.class);
+
+		targeter.target(feignClientFactoryBean, new PolarisFeignCircuitBreaker.Builder(), feignContext, new Target.HardCodedTarget<>(TestApi.class, "/test"));
+	}
+
+	@Test
+	public void testTargetWithFallback() {
+		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter();
+		FeignClientFactoryBean feignClientFactoryBean = mock(FeignClientFactoryBean.class);
+
+		doReturn(TestApiFallback.class).when(feignClientFactoryBean).getFallback();
+		doReturn("test").when(feignClientFactoryBean).getName();
+
+
+		doReturn(new PolarisCircuitBreakerFallbackFactory()).when(feignContext).getInstance("test", TestApiFallback.class);
+
+		targeter.target(feignClientFactoryBean, new PolarisFeignCircuitBreaker.Builder(), feignContext, new Target.HardCodedTarget<>(TestApi.class, "/test"));
+	}
+
 	interface TestApi {
 		@RequestLine("GET /test")
 		void test();
+	}
+
+	static class TestApiFallback implements TestApi {
+		@Override
+		public void test() {
+			// fallback implementation
+		}
+	}
+
+	public static class PolarisCircuitBreakerFallbackFactory implements FallbackFactory<TestApi> {
+		@Override
+		public TestApi create(Throwable cause) {
+			return new TestApiFallback();
+		}
 	}
 
 }

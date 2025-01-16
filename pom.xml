@@ -93,7 +93,7 @@
 		<revision>2.0.0.0-2021.0.9</revision>
 
 		<!-- Spring Framework -->
-		<spring.framework.version>5.3.31</spring.framework.version>
+		<spring.framework.version>5.3.39</spring.framework.version>
 
 		<!-- Spring Boot -->
 		<spring.boot.version>2.7.18</spring.boot.version>
