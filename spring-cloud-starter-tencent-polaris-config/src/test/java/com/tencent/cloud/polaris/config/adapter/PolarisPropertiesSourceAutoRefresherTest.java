@@ -121,10 +121,13 @@ public class PolarisPropertiesSourceAutoRefresherTest {
 		ConfigPropertyChangeInfo changeInfo = new ConfigPropertyChangeInfo("k1", "v1", "v11", ChangeType.MODIFIED);
 		ConfigPropertyChangeInfo changeInfo2 = new ConfigPropertyChangeInfo("k4", null, "v4", ChangeType.ADDED);
 		ConfigPropertyChangeInfo changeInfo3 = new ConfigPropertyChangeInfo("k2", "v2", null, ChangeType.DELETED);
+		ConfigPropertyChangeInfo changeInfoLogger = new ConfigPropertyChangeInfo("logging.level.root", null, "info", ChangeType.ADDED);
+
 		Map<String, ConfigPropertyChangeInfo> changeInfos = new HashMap<>();
 		changeInfos.put("k1", changeInfo);
 		changeInfos.put("k2", changeInfo3);
 		changeInfos.put("k4", changeInfo2);
+		changeInfos.put("logging.level.root", changeInfoLogger);
 
 		ConfigKVFileChangeEvent event = new ConfigKVFileChangeEvent(changeInfos);
 		refresher.onApplicationEvent(null);

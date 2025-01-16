@@ -18,6 +18,8 @@
 
 package com.tencent.cloud.polaris.config.adapter;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -62,6 +64,9 @@ public class PolarisRefreshEntireContextRefresherTest {
 
 	@Mock
 	private ConfigurableApplicationContext applicationContext;
+
+	@Mock
+	private PolarisConfigCustomExtensionLayer mockExtensionLayer;
 
 	private PolarisRefreshEntireContextRefresher refresher;
 
@@ -173,4 +178,32 @@ public class PolarisRefreshEntireContextRefresherTest {
 		verify(contextRefresher, times(1)).refresh();
 		verifyNoInteractions(applicationContext);
 	}
+
+	@Test
+	void testPolarisConfigCustomExtensionLayer() throws Exception {
+		refresher.setRegistered(true);
+
+		Field field = PolarisConfigPropertyAutoRefresher.class
+				.getDeclaredField("polarisConfigCustomExtensionLayer");
+		field.setAccessible(true);
+		field.set(refresher, mockExtensionLayer);
+
+		Method method = PolarisConfigPropertyAutoRefresher.class
+				.getDeclaredMethod("customInitRegisterPolarisConfig", PolarisConfigPropertyAutoRefresher.class);
+		method.setAccessible(true);
+		method.invoke(refresher, refresher);
+
+
+		method = PolarisConfigPropertyAutoRefresher.class.getDeclaredMethod(
+				"customRegisterPolarisConfigPublishChangeListener",
+				PolarisPropertySource.class, PolarisPropertySource.class);
+
+		method.setAccessible(true);
+		method.invoke(refresher, null, null);
+
+		// Verify
+		verify(mockExtensionLayer, times(1)).initRegisterConfig(refresher);
+
+	}
+
 }
