@@ -99,7 +99,7 @@ public class DefaultEnhancedPluginRunner implements EnhancedPluginRunner {
 		return this.localServiceInstance;
 	}
 
-	private static Registration getPolarisRegistration(List<Registration> registration) {
+	static Registration getPolarisRegistration(List<Registration> registration) {
 
 		if (CollectionUtils.isEmpty(registration)) {
 			return null;

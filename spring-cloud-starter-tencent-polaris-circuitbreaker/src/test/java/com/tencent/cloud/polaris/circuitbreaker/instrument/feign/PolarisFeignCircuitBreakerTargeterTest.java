@@ -81,6 +81,21 @@ public class PolarisFeignCircuitBreakerTargeterTest {
 		}).isInstanceOf(IllegalStateException.class);
 	}
 
+	@Test
+	public void testTarget4() {
+		PolarisFeignCircuitBreakerTargeter targeter = new PolarisFeignCircuitBreakerTargeter();
+		FeignClientFactoryBean feignClientFactoryBean = mock(FeignClientFactoryBean.class);
+		doReturn(void.class).when(feignClientFactoryBean).getFallback();
+		doReturn(PolarisCircuitBreakerFallbackFactory.class).when(feignClientFactoryBean).getFallbackFactory();
+		doReturn("test").when(feignClientFactoryBean).getName();
+		FeignContext feignClientFactory = mock(FeignContext.class);
+		doReturn(PolarisCircuitBreakerFallbackFactory.class).when(feignClientFactory).getInstance("test", PolarisCircuitBreakerFallbackFactory.class);
+		// will case ClassCastException after getFromContext() is called in PolarisFeignCircuitBreakerTargeter.java
+		assertThatThrownBy(() -> {
+			targeter.target(feignClientFactoryBean, new PolarisFeignCircuitBreaker.Builder(), feignClientFactory, new Target.HardCodedTarget<>(TestApi.class, "/test"));
+		}).isInstanceOf(ClassCastException.class);
+	}
+
 	interface TestApi {
 		@RequestLine("GET /test")
 		void test();

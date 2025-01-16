@@ -140,6 +140,35 @@ public class CircuitBreakerPluginTest {
 	}
 
 	@Test
+	public void testRun2() throws Throwable {
+		when(circuitBreakAPI.makeInvokeHandler(any())).thenReturn(new MockInvokeHandler2());
+
+		PolarisCircuitBreakerConfigBuilder polarisCircuitBreakerConfigBuilder = new PolarisCircuitBreakerConfigBuilder();
+		PolarisCircuitBreaker polarisCircuitBreaker = new PolarisCircuitBreaker(polarisCircuitBreakerConfigBuilder.build(), consumerAPI, circuitBreakAPI);
+		when(circuitBreakerFactory.create(anyString())).thenReturn(polarisCircuitBreaker);
+
+
+		EnhancedPluginContext pluginContext = new EnhancedPluginContext();
+		EnhancedRequestContext request = EnhancedRequestContext.builder()
+				.httpMethod(HttpMethod.GET)
+				.url(URI.create("http://0.0.0.0/"))
+				.httpHeaders(new HttpHeaders())
+				.build();
+		EnhancedResponseContext response = EnhancedResponseContext.builder()
+				.httpStatus(200)
+				.build();
+		DefaultServiceInstance serviceInstance = new DefaultServiceInstance();
+		serviceInstance.setServiceId(SERVICE_PROVIDER);
+
+		pluginContext.setRequest(request);
+		pluginContext.setResponse(response);
+		pluginContext.setTargetServiceInstance(serviceInstance, null);
+		pluginContext.setThrowable(new RuntimeException());
+		// no exception
+		circuitBreakerPlugin.run(pluginContext);
+	}
+
+	@Test
 	public void testHandlerThrowable() {
 		// mock request
 		EnhancedRequestContext request = mock(EnhancedRequestContext.class);
@@ -156,6 +185,23 @@ public class CircuitBreakerPluginTest {
 		@Override
 		public void acquirePermission() {
 			throw new CallAbortedException("mock", new CircuitBreakerStatus.FallbackInfo(0, new HashMap<>(), ""));
+		}
+
+		@Override
+		public void onSuccess(InvokeContext.ResponseContext responseContext) {
+
+		}
+
+		@Override
+		public void onError(InvokeContext.ResponseContext responseContext) {
+
+		}
+	}
+
+	static class MockInvokeHandler2 implements InvokeHandler {
+		@Override
+		public void acquirePermission() {
+			return;
 		}
 
 		@Override

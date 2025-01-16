@@ -152,6 +152,31 @@ class SecurityProtectionAutoConfigurationTest {
 		}
 	}
 
+	@Test
+	void testInterruptedExceptionHandling() throws InterruptedException {
+		// Arrange
+		ConfigurableApplicationContext mockContext = mock(ConfigurableApplicationContext.class);
+		Thread testThread = new Thread(() -> ExitUtils.exit(mockContext, 3000));
+
+
+
+		SecurityManager originalSecurityManager = System.getSecurityManager();
+		System.setSecurityManager(new ExitSecurityManager());
+
+		try {
+			// Act
+			testThread.start();
+			testThread.interrupt();
+			Thread.sleep(6000);
+		}
+		catch (SecurityException e) {
+			// Ignore
+		}
+		finally {
+			System.setSecurityManager(originalSecurityManager);
+		}
+	}
+
 	public static class ExitSecurityManager extends SecurityManager {
 
 		@Override

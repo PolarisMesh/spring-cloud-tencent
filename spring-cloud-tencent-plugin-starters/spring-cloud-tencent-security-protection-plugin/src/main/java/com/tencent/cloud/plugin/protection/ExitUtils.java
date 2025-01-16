@@ -32,13 +32,17 @@ public final class ExitUtils {
 	}
 
 	public static void exit(ApplicationContext context) {
+		exit(context, 3000);
+	}
+
+	public static void exit(ApplicationContext context, int delay) {
 		if (context instanceof ConfigurableApplicationContext) {
 			ConfigurableApplicationContext configurableContext = (ConfigurableApplicationContext) context;
 			configurableContext.close();
 		}
 
 		try {
-			Thread.sleep(3000);
+			Thread.sleep(delay);
 		}
 		catch (InterruptedException e) {
 			// do nothing
